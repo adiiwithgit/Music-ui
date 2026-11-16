@@ -2,7 +2,7 @@
 
 A Spotify-style music player interface built with plain HTML, CSS and JavaScript. It is **visual only**: no real audio plays, but the progress bar, timer, queue and controls all behave as if a song were playing.
 
-**Live demo:** 
+**Live demo:** https://music-ui-7f6q.onrender.com
 
 ## Features
 
