@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Wavelength – Music Player UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f4f6;
+            --panel: #fff;
+            --panel2: #ececf0;
+            --text: #15151a;
+            --mute: #6b6b78;
+            --acc: #1db954;
+            --hover: rgba(0, 0, 0, .06);
+            --line: rgba(0, 0, 0, .1);
+            color-scheme: light;
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px)
+        }
+
+        @media(prefers-color-scheme:dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #000;
+                --panel: #121214;
+                --panel2: #1c1c20;
+                --text: #fff;
+                --mute: #a2a2ad;
+                --hover: rgba(255, 255, 255, .08);
+                --line: rgba(255, 255, 255, .1);
+                color-scheme: dark
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #000;
+            --panel: #121214;
+            --panel2: #1c1c20;
+            --text: #fff;
+            --mute: #a2a2ad;
+            --hover: rgba(255, 255, 255, .08);
+            --line: rgba(255, 255, 255, .1);
+            color-scheme: dark
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: Figtree, system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 14px;
+            overflow: hidden
+        }
+
+        button {
+            font: inherit;
+            color: inherit;
+            background: none;
+            border: 0;
+            cursor: pointer
+        }
+
+        button:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 2px solid var(--acc);
+            outline-offset: 2px
+        }
+
+        svg {
+            width: 1em;
+            height: 1em;
+            fill: currentColor;
+            flex: none
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 1fr 88px;
+            gap: 8px;
+            padding: 8px;
+            height: 100%
+        }
+
+        .app.noq {
+            grid-template-columns: 280px 1fr
+        }
+
+        .app.noq .queue {
+            display: none
+        }
+
+        .card {
+            background: var(--panel);
+            border-radius: 10px;
+            overflow: hidden;
+            min-height: 0
+        }
+
+        .side {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: none
+        }
+
+        .nav {
+            padding: 8px 12px;
+            background: var(--panel);
+            border-radius: 10px
+        }
+
+        .nav button {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--mute)
+        }
+
+        .nav button.on,
+        .nav button:hover {
+            color: var(--text)
+        }
+
+        .nav svg {
+            font-size: 24px
+        }
+
+        .lib {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0
+        }
+
+        .lib h3 {
+            padding: 16px 20px 8px;
+            font-size: 15px;
+            color: var(--mute);
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .chips {
+            display: flex;
+            gap: 8px;
+            padding: 4px 16px 8px
+        }
+
+        .chip {
+            padding: 6px 12px;
+            border-radius: 99px;
+            background: var(--panel2);
+            font-weight: 600;
+            font-size: 13px
+        }
+
+        .chip.on {
+            background: var(--text);
+            color: var(--bg)
+        }
+
+        .pl {
+            overflow: auto;
+            padding: 4px 8px 12px
+        }
+
+        .pl button {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: left
+        }
+
+        .pl button:hover,
+        .pl button.on {
+            background: var(--hover)
+        }
+
+        .pl .art {
+            width: 48px;
+            height: 48px;
+            border-radius: 6px
+        }
+
+        .pl b {
+            display: block;
+            font-weight: 600
+        }
+
+        .pl small {
+            color: var(--mute)
+        }
+
+        .art {
+            background: var(--g);
+            position: relative;
+            overflow: hidden
+        }
+
+        .art::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, .35), transparent 45%), radial-gradient(circle at 20% 90%, rgba(0, 0, 0, .35), transparent 50%)
+        }
+
+        .main {
+            overflow: auto;
+            background: linear-gradient(180deg, var(--hue, #3a2a6a) 0, var(--panel) 340px) var(--panel)
+        }
+
+        .top {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+            gap: 12px
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--panel2);
+            border-radius: 99px;
+            padding: 10px 16px;
+            width: min(360px, 100%);
+            color: var(--mute)
+        }
+
+        .search input {
+            background: none;
+            border: 0;
+            outline: 0;
+            color: var(--text);
+            font: inherit;
+            width: 100%
+        }
+
+        .ib {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, .35);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 16px
+        }
+
+        .hero {
+            display: flex;
+            gap: 24px;
+            align-items: flex-end;
+            padding: 8px 24px 24px
+        }
+
+        .hero .art {
+            width: min(220px, 30vw);
+            aspect-ratio: 1;
+            border-radius: 8px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, .45)
+        }
+
+        .hero h1 {
+            font-size: clamp(34px, 6vw, 76px);
+            font-weight: 800;
+            letter-spacing: -.03em;
+            line-height: 1
+        }
+
+        .hero p {
+            color: var(--mute);
+            margin-top: 10px
+        }
+
+        .hero p b {
+            color: var(--text)
+        }
+
+        .act {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            padding: 8px 24px 16px
+        }
+
+        .big {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--acc);
+            color: #000;
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+            transition: transform .15s
+        }
+
+        .big:hover {
+            transform: scale(1.06)
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 36px 1fr 1fr 60px;
+            gap: 16px;
+            align-items: center;
+            padding: 6px 24px;
+            margin: 0 8px;
+            border-radius: 6px;
+            color: var(--mute)
+        }
+
+        .row.h {
+            border-bottom: 1px solid var(--line);
+            border-radius: 0;
+            font-size: 12px;
+            position: sticky;
+            top: 62px;
+            background: var(--panel);
+            z-index: 3;
+            margin-bottom: 6px
+        }
+
+        .row.t {
+            cursor: pointer
+        }
+
+        .row.t:hover {
+            background: var(--hover)
+        }
+
+        .row .n {
+            text-align: center
+        }
+
+        .row .pb {
+            display: none;
+            color: var(--text)
+        }
+
+        .row.t:hover .n span {
+            display: none
+        }
+
+        .row.t:hover .pb {
+            display: block
+        }
+
+        .row .ti {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            color: var(--text);
+            min-width: 0
+        }
+
+        .row .ti .art {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px
+        }
+
+        .row .ti b {
+            font-weight: 600;
+            display: block
+        }
+
+        .row .ti small {
+            color: var(--mute)
+        }
+
+        .row.cur .ti b,
+        .row.cur .n {
+            color: var(--acc)
+        }
+
+        .sec {
+            padding: 20px 24px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline
+        }
+
+        .sec h2 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.01em
+        }
+
+        .sec span {
+            color: var(--mute);
+            font-weight: 700
+        }
+
+        .quick {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+            padding: 8px 24px
+        }
+
+        .quick button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(127, 127, 140, .2);
+            border-radius: 6px;
+            overflow: hidden;
+            text-align: left;
+            font-weight: 700;
+            padding-right: 8px;
+            transition: background .2s
+        }
+
+        .quick button:hover {
+            background: rgba(127, 127, 140, .34)
+        }
+
+        .quick .art {
+            width: 56px;
+            height: 56px
+        }
+
+        .shelf {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 168px;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 8px 24px 20px
+        }
+
+        .shelf button {
+            padding: 14px;
+            border-radius: 8px;
+            background: var(--panel2);
+            text-align: left;
+            transition: background .2s
+        }
+
+        .shelf button:hover {
+            background: var(--hover)
+        }
+
+        .shelf .art {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .3)
+        }
+
+        .shelf b {
+            display: block;
+            font-weight: 700
+        }
+
+        .shelf small {
+            color: var(--mute);
+            display: block;
+            margin-top: 4px;
+            line-height: 1.35
+        }
+
+        .queue {
+            padding: 16px;
+            overflow: auto
+        }
+
+        .queue h3 {
+            font-size: 16px;
+            margin-bottom: 14px
+        }
+
+        .queue .big2 {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, .4)
+        }
+
+        .queue h4 {
+            font-size: 22px;
+            font-weight: 800
+        }
+
+        .queue p {
+            color: var(--mute);
+            margin: 2px 0 16px
+        }
+
+        .queue .nx {
+            color: var(--mute);
+            font-size: 12px;
+            font-weight: 700;
+            margin: 14px 0 6px
+        }
+
+        .q {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 6px;
+            border-radius: 6px;
+            width: 100%;
+            text-align: left
+        }
+
+        .q:hover {
+            background: var(--hover)
+        }
+
+        .q .art {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px
+        }
+
+        .q small {
+            color: var(--mute);
+            display: block
+        }
+
+        .bar {
+            grid-column: 1/-1;
+            display: grid;
+            grid-template-columns: 1fr minmax(300px, 2fr) 1fr;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px
+        }
+
+        .np {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            min-width: 0
+        }
+
+        .np .art {
+            width: 56px;
+            height: 56px;
+            border-radius: 6px
+        }
+
+        .np b {
+            display: block;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .np small {
+            color: var(--mute)
+        }
+
+        .ctl {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center
+        }
+
+        .btns {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-size: 20px
+        }
+
+        .btns button {
+            color: var(--mute)
+        }
+
+        .btns button:hover,
+        .btns button.on {
+            color: var(--text)
+        }
+
+        .btns button.on {
+            color: var(--acc)
+        }
+
+        .btns .pp {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--text);
+            color: var(--bg);
+            display: grid;
+            place-items: center
+        }
+
+        .btns .pp:hover {
+            transform: scale(1.06);
+            color: var(--bg)
+        }
+
+        .prog {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            font-size: 11px;
+            color: var(--mute);
+            font-variant-numeric: tabular-nums
+        }
+
+        .sl {
+            flex: 1;
+            height: 4px;
+            border-radius: 4px;
+            background: var(--panel2);
+            position: relative;
+            cursor: pointer;
+            padding: 6px 0;
+            background-clip: content-box
+        }
+
+        .sl i {
+            position: absolute;
+            left: 0;
+            top: 6px;
+            bottom: 6px;
+            background: var(--text);
+            border-radius: 4px;
+            width: 0
+        }
+
+        .sl:hover i,
+        .sl:focus-visible i {
+            background: var(--acc)
+        }
+
+        .sl::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: var(--p, 0%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform .1s
+        }
+
+        .sl:hover::after,
+        .sl:focus-visible::after {
+            transform: translate(-50%, -50%) scale(1)
+        }
+
+        .right {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            color: var(--mute)
+        }
+
+        .right button:hover,
+        .right button.on {
+            color: var(--acc)
+        }
+
+        .right .sl {
+            max-width: 100px
+        }
+
+        .eq {
+            display: inline-flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 14px
+        }
+
+        .eq u {
+            width: 3px;
+            background: var(--acc);
+            height: 30%;
+            animation: eq .9s infinite ease-in-out
+        }
+
+        .eq u:nth-child(2) {
+            animation-delay: .2s
+        }
+
+        .eq u:nth-child(3) {
+            animation-delay: .45s
+        }
+
+        .paused .eq u {
+            animation-play-state: paused
+        }
+
+        @keyframes eq {
+            50% {
+                height: 100%
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            .eq u {
+                animation: none;
+                height: 70%
+            }
+        }
+
+        @media(max-width:1100px) {
+
+            .app,
+            .app.noq {
+                grid-template-columns: 76px 1fr
+            }
+
+            .queue {
+                display: none
+            }
+
+            .nav button span,
+            .lib h3 span,
+            .chips,
+            .pl small,
+            .pl b {
+                display: none
+            }
+
+            .lib h3 {
+                padding: 12px 0;
+                justify-content: center
+            }
+
+            .pl button {
+                justify-content: center
+            }
+
+            .nav button {
+                justify-content: center;
+                padding: 10px 0
+            }
+        }
+
+        @media(max-width:700px) {
+
+            .app,
+            .app.noq {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto
+            }
+
+            .side {
+                display: none
+            }
+
+            .bar {
+                grid-template-columns: 1fr auto;
+                padding: 10px 12px
+            }
+
+            .right {
+                display: none
+            }
+
+            .ctl {
+                grid-column: 1/-1;
+                grid-row: 2
+            }
+
+            .btns .hide {
+                display: none
+            }
+
+            .row {
+                grid-template-columns: 28px 1fr 48px
+            }
+
+            .row .al {
+                display: none
+            }
+
+            .hero {
+                flex-direction: column;
+                align-items: flex-start
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <symbol id="play" viewBox="0 0 24 24">
+                <path d="M8 5.1v13.8a1 1 0 0 0 1.5.9l11-6.9a1 1 0 0 0 0-1.8l-11-6.9A1 1 0 0 0 8 5.1z" />
+            </symbol>
+            <symbol id="pause" viewBox="0 0 24 24">
+                <path d="M7 4h3.5v16H7zM13.5 4H17v16h-3.5z" />
+            </symbol>
+            <symbol id="next" viewBox="0 0 24 24">
+                <path d="M6 5.2v13.6a1 1 0 0 0 1.5.9l9-6.8a1 1 0 0 0 0-1.8l-9-6.8A1 1 0 0 0 6 5.2zM17 5h2.5v14H17z" />
+            </symbol>
+            <symbol id="prev" viewBox="0 0 24 24">
+                <path d="M18 5.2v13.6a1 1 0 0 1-1.5.9l-9-6.8a1 1 0 0 1 0-1.8l9-6.8A1 1 0 0 1 18 5.2zM4.5 5H7v14H4.5z" />
+            </symbol>
+            <symbol id="shuf" viewBox="0 0 24 24">
+                <path
+                    d="M16 3h5v5l-1.8-1.8L4.7 20.7 3.3 19.3 17.8 4.8 16 3zm0 18l1.8-1.8-4-4 1.4-1.4 4 4L21 16v5h-5zM3.3 4.7l5.5 5.5-1.4 1.4L1.9 6.1z" />
+            </symbol>
+            <symbol id="rep" viewBox="0 0 24 24">
+                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+            </symbol>
+            <symbol id="heart" viewBox="0 0 24 24">
+                <path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" />
+            </symbol>
+            <symbol id="home" viewBox="0 0 24 24">
+                <path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z" />
+            </symbol>
+            <symbol id="srch" viewBox="0 0 24 24">
+                <path
+                    d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.3 4.3-1.4 1.4-4.3-4.3A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" />
+            </symbol>
+            <symbol id="libr" viewBox="0 0 24 24">
+                <path d="M3 3h2.5v18H3zm5 0h2.5v18H8zm5.2 1.2l2.4-.6 4.5 17-2.4.6z" />
+            </symbol>
+            <symbol id="vol" viewBox="0 0 24 24">
+                <path d="M3 9v6h4l5 4V5L7 9zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" />
+            </symbol>
+            <symbol id="list" viewBox="0 0 24 24">
+                <path d="M3 5h14v2H3zm0 6h14v2H3zm0 6h9v2H3zm14 0v-5l5 2.5z" />
+            </symbol>
+            <symbol id="sun" viewBox="0 0 24 24">
+                <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3z" />
+            </symbol>
+        </defs>
+    </svg>
+
+    <div class="app" id="app">
+        <aside class="side">
+            <nav class="nav"><button class="on"><svg>
+                        <use href="#home" />
+                    </svg><span>Home</span></button><button><svg>
+                        <use href="#srch" />
+                    </svg><span>Search</span></button></nav>
+            <section class="card lib">
+                <h3><span>Your Library</span><svg style="font-size:20px">
+                        <use href="#libr" />
+                    </svg></h3>
+                <div class="chips"><span class="chip on">Playlists</span><span class="chip">Artists</span><span
+                        class="chip">Albums</span></div>
+                <div class="pl" id="pl"></div>
+            </section>
+        </aside>
+
+        <main class="card main" id="main" style="--hue:#3b2a78">
+            <div class="top"><label class="search"><svg>
+                        <use href="#srch" />
+                    </svg><input placeholder="What do you want to play?" aria-label="Search"></label>
+                <button class="ib" id="theme" aria-label="Toggle theme"><svg>
+                        <use href="#sun" />
+                    </svg></button>
+            </div>
+            <div class="hero">
+                <div class="art" id="hArt"></div>
+                <div>
+                    <p style="margin:0 0 8px"><b>Playlist</b></p>
+                    <h1 id="hT"></h1>
+                    <p id="hS"></p>
+                </div>
+            </div>
+            <div class="act"><button class="big" id="hPlay" aria-label="Play playlist"><svg>
+                        <use href="#play" />
+                    </svg></button><button class="ib" style="background:none;color:var(--mute);font-size:28px"
+                    id="hLike" aria-label="Like playlist"><svg>
+                        <use href="#heart" />
+                    </svg></button></div>
+            <div class="row h"><span class="n">#</span><span>Title</span><span class="al">Album</span><span>Time</span>
+            </div>
+            <div id="rows"></div>
+            <div class="sec">
+                <h2>Jump back in</h2><span>Show all</span>
+            </div>
+            <div class="quick" id="quick"></div>
+            <div class="sec">
+                <h2>Made for you</h2><span>Show all</span>
+            </div>
+            <div class="shelf" id="shelf"></div>
+        </main>
+
+        <aside class="card queue" id="queue"></aside>
+
+        <footer class="card bar">
+            <div class="np">
+                <div class="art" id="nArt"></div>
+                <div style="min-width:0"><b id="nT"></b><small id="nA"></small></div>
+                <button id="nLike" aria-label="Like" style="color:var(--mute);font-size:18px"><svg>
+                        <use href="#heart" />
+                    </svg></button>
+            </div>
+            <div class="ctl">
+                <div class="btns">
+                    <button id="shuf" aria-label="Shuffle" class="hide"><svg>
+                            <use href="#shuf" />
+                        </svg></button>
+                    <button id="prev" aria-label="Previous"><svg>
+                            <use href="#prev" />
+                        </svg></button>
+                    <button class="pp" id="pp" aria-label="Play"><svg>
+                            <use href="#play" />
+                        </svg></button>
+                    <button id="next" aria-label="Next"><svg>
+                            <use href="#next" />
+                        </svg></button>
+                    <button id="rep" aria-label="Repeat" class="hide"><svg>
+                            <use href="#rep" />
+                        </svg></button>
+                </div>
+                <div class="prog"><span id="cur">0:00</span>
+                    <div class="sl" id="seek" tabindex="0" role="slider" aria-label="Seek"><i id="seekI"></i></div><span
+                        id="dur">0:00</span>
+                </div>
+            </div>
+            <div class="right"><button id="qBtn" class="on" aria-label="Queue"><svg>
+                        <use href="#list" />
+                    </svg></button><svg>
+                    <use href="#vol" />
+                </svg>
+                <div class="sl" id="vol" tabindex="0" role="slider" aria-label="Volume" style="--p:70%"><i
+                        style="width:70%"></i></div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const T = [
+            { t: "Neon Tide", a: "Kairo Vale", al: "Afterglow", d: 214, h: 265 },
+            { t: "Paper Lanterns", a: "Mina Okafor", al: "Soft Static", d: 187, h: 20 },
+            { t: "Midnight Local", a: "The Borrowed Hours", al: "Last Train Home", d: 243, h: 200 },
+            { t: "Saltwater Hymn", a: "Ines Marlowe", al: "Tidelines", d: 198, h: 175 },
+            { t: "Static Bloom", a: "Kairo Vale", al: "Afterglow", d: 226, h: 310 },
+            { t: "Gold Hour", a: "Dune Parade", al: "Sunday Drive", d: 172, h: 42 },
+            { t: "Where the Signal Ends", a: "Halden", al: "Low Orbit", d: 259, h: 230 },
+            { t: "Velvet Static", a: "Mina Okafor", al: "Soft Static", d: 205, h: 340 }];
+        const P = [["Late Night Circuits", "Focus"], ["Chill Mornings", "Easy"], ["Rooftop Sessions", "Indie"], ["Deep Orbit", "Ambient"], ["Daily Mix 1", "Made for you"], ["Release Radar", "New"], ["Throwback Tape", "Retro"], ["Gym Surge", "Energy"]];
+        const g = h => `linear-gradient(135deg,hsl(${h} 70% 55%),hsl(${(h + 50) % 360} 65% 28%))`;
+        const $ = s => document.querySelector(s), fmt = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+        const S = { i: 0, pos: 0, on: false, shuf: false, rep: 0, liked: new Set([2]), q: true };
+        const art = (h, c = "") => `<div class="art ${c}" style="--g:${g(h)}"></div>`;
+        const ic = n => `<svg><use href="#${n}"/></svg>`;
+        $("#pl").innerHTML = P.map((p, k) => `<button class="${k ? "" : "on"}">${art(k * 45 + 250)}<span><b>${p[0]}</b><small>Playlist · Wavelength</small></span></button>`).join("");
+        $("#quick").innerHTML = P.slice(0, 6).map((p, k) => `<button data-k="${k}">${art(k * 55 + 10)}${p[0]}</button>`).join("");
+        $("#shelf").innerHTML = P.map((p, k) => `<button>${art(k * 47 + 120)}<b>${p[0]}</b><small>${p[1]} picks, curated for how you listen</small></button>`).join("");
+        $("#hArt").style.setProperty("--g", g(265)); $("#hArt").classList.add("art");
+        $("#hT").textContent = "Late Night Circuits";
+        $("#hS").innerHTML = "<b>Wavelength</b> · 8 songs, 29 min";
+        function rows() { $("#rows").innerHTML = T.map((x, k) => `<div class="row t ${k == S.i ? "cur" : ""}" data-k="${k}"><span class="n"><span>${k == S.i && S.on ? '<i class="eq"><u></u><u></u><u></u></i>' : k + 1}</span><span class="pb">${ic(k == S.i && S.on ? "pause" : "play")}</span></span><span class="ti">${art(x.h)}<span><b>${x.t}</b><small>${x.a}</small></span></span><span class="al">${x.al}</span><span>${fmt(x.d)}</span></div>`).join("") }
+        function queue() {
+            const x = T[S.i]; let n = ""; for (let k = 1; k <= 4; k++) { const y = T[(S.i + k) % T.length]; n += `<button class="q" data-k="${(S.i + k) % T.length}">${art(y.h)}<span><b>${y.t}</b><small>${y.a}</small></span></button>` }
+            $("#queue").innerHTML = `<h3>Now playing</h3><div class="big2 art" style="--g:${g(x.h)}"></div><h4>${x.t}</h4><p>${x.a}</p><div class="nx">Next in queue</div>${n}`
+        }
+        function ui() {
+            const x = T[S.i];
+            $("#nArt").className = "art"; $("#nArt").style.setProperty("--g", g(x.h));
+            $("#nT").textContent = x.t; $("#nA").textContent = x.a; $("#dur").textContent = fmt(x.d);
+            $("#pp").innerHTML = ic(S.on ? "pause" : "play"); $("#hPlay").innerHTML = ic(S.on ? "pause" : "play");
+            $("#app").classList.toggle("paused", !S.on);
+            const l = S.liked.has(S.i); $("#nLike").style.color = l ? "var(--acc)" : ""; $("#nLike").firstChild.style.fill = l ? "var(--acc)" : "";
+            $("#main").style.setProperty("--hue", `hsl(${x.h} 45% 26%)`);
+            $("#shuf").classList.toggle("on", S.shuf); $("#rep").classList.toggle("on", S.rep > 0);
+            rows(); queue(); prog()
+        }
+        function prog() { const d = T[S.i].d, p = S.pos / d * 100; $("#cur").textContent = fmt(S.pos); $("#seekI").style.width = p + "%"; $("#seek").style.setProperty("--p", p + "%") }
+        function go(k) { S.i = (k + T.length) % T.length; S.pos = 0; ui() }
+        function nextT() { go(S.shuf ? Math.floor(Math.random() * T.length) : S.i + 1) }
+        document.addEventListener("click", e => {
+            const r = e.target.closest(".row.t,.q,.quick button"); if (!r) return;
+            const k = +r.dataset.k; if (r.matches(".row.t") && k == S.i) S.on = !S.on; else { S.i = k % T.length; S.pos = 0; S.on = true } ui()
+        });
+        $("#pp").onclick = $("#hPlay").onclick = () => { S.on = !S.on; ui() };
+        $("#next").onclick = nextT; $("#prev").onclick = () => S.pos > 3 ? (S.pos = 0, prog()) : go(S.i - 1);
+        $("#shuf").onclick = () => { S.shuf = !S.shuf; ui() };
+        $("#rep").onclick = () => { S.rep = (S.rep + 1) % 2; ui() };
+        $("#nLike").onclick = () => { S.liked.has(S.i) ? S.liked.delete(S.i) : S.liked.add(S.i); ui() };
+        $("#qBtn").onclick = e => { S.q = !S.q; $("#app").classList.toggle("noq", !S.q); e.currentTarget.classList.toggle("on", S.q) };
+        $("#theme").onclick = () => { const r = document.documentElement, dk = r.dataset.theme ? r.dataset.theme == "dark" : matchMedia("(prefers-color-scheme:dark)").matches; r.dataset.theme = dk ? "light" : "dark" };
+        function slide(el, fn) {
+            const f = e => { const b = el.getBoundingClientRect(); fn(Math.min(1, Math.max(0, (e.clientX - b.left) / b.width))) };
+            el.addEventListener("pointerdown", e => { f(e); el.setPointerCapture(e.pointerId); el.onpointermove = f }); el.addEventListener("pointerup", () => el.onpointermove = null)
+        }
+        slide($("#seek"), v => { S.pos = v * T[S.i].d; prog() });
+        slide($("#vol"), v => { $("#vol").style.setProperty("--p", v * 100 + "%"); $("#vol i").style.width = v * 100 + "%" });
+        $("#seek").addEventListener("keydown", e => { if (e.key == "ArrowRight") S.pos = Math.min(T[S.i].d, S.pos + 5); if (e.key == "ArrowLeft") S.pos = Math.max(0, S.pos - 5); prog() });
+        document.addEventListener("keydown", e => { if (e.code == "Space" && e.target == document.body) { e.preventDefault(); S.on = !S.on; ui() } });
+        setInterval(() => { if (!S.on) return; S.pos += .25; if (S.pos >= T[S.i].d) { S.rep ? (S.pos = 0) : nextT() } prog() }, 250);
+        ui();
+    </script>
+</body>
+
+</html>
